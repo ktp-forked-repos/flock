@@ -25,9 +25,9 @@ def main():
 
     # Sim variables
     flock = []
-    for i in range(200):
+    for i in range(100):
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        flock.append(Bird(Vector(RADIUS, RADIUS), Vector(random.random() * 10 - 5, random.random() * 10 - 5), color))
+        flock.append(Bird(Vector(RADIUS, RADIUS), color))
 
     # Main sim loop
     done = False
@@ -43,7 +43,7 @@ def main():
         # Move and draw birds
         for bird in flock:
             # Move bird
-            bird.move()
+            bird.move(flock)
 
             # Draw bird
             x = int(bird.position.x)

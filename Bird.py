@@ -7,18 +7,26 @@ RADIUS = 500
 
 # This class defines a bird, which is a member of a flock
 class Bird:
-    circle_avoid_strength = 2
     position = Vector(0, 0)
-    velocity = Vector(0, 0)
+    velocity = Vector(random.random() - 0.5, random.random() - 0.5)
     color = ()
-    speed_limit = 5
 
-    def __init__(self, position, velocity, color):
+    speed_limit = 5
+    detection_radius = 100
+    circle_avoid_strength = 20
+    bird_avoid_strength = 10
+
+    def __init__(self, position, color):
         self.position = position
-        self.velocity = velocity
         self.color = color
 
-    def update_velocity(self):
+    # Update this bird's velocity
+    def update_velocity(self, flock):
+
+        # Random movement
+        # self.velocity = self.velocity.add(Vector(random.random() / 10 - 0.05, random.random() / 10 - 0.05))
+
+        # Circle avoidance
         circle_vector = get_vector_to_circle(self.position, RADIUS)
         if circle_vector is not None:
             r = circle_vector.get_magnitude()
@@ -29,16 +37,31 @@ class Bird:
             else:
                 self.velocity = self.velocity.subtract(circle_avoid)
 
-        self.velocity = self.velocity.add(Vector(random.random() / 10 - 0.05, random.random() / 10 - 0.05))
+
+        # Crowding avoidance
+        for bird in (bird for bird in flock if 0 < self.get_distance_to(bird) < self.detection_radius):
+            vector_to_bird = bird.position.subtract(self.position)
+            r = vector_to_bird.get_magnitude()
+            bird_avoid = vector_to_bird.scale(-1 * self.bird_avoid_strength / (r * r))
+
+            self.velocity = self.velocity.add(bird_avoid)
 
         # Enforce speed limit
         speed = self.velocity.get_magnitude()
         if speed > self.speed_limit:
             self.velocity = self.velocity.scale(self.speed_limit / speed)
 
-    def move(self):
-        self.update_velocity()
+    # Update this bird's position
+    def move(self, flock):
+        self.update_velocity(flock)
         self.position = self.position.add(self.velocity)
+
+    # FInd the distance from this bird to another one
+    def get_distance_to(self, bird):
+        return self.position.subtract(bird.position).get_magnitude()
+
+
+
 
 
 # Returns true if the Vector point is in circle of radius, else false
