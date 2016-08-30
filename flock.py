@@ -9,9 +9,10 @@ RED = (255, 0, 0)
 RADIUS = 500
 
 
-def point_in_circle(x, y, radius):
-    dx = abs(x - radius)
-    dy = abs(y - radius)
+# Returns true if the Vector point is in circle of radius, else false
+def point_in_circle(point, radius):
+    dx = abs(point.x - radius)
+    dy = abs(point.y - radius)
 
     if dx + dy < radius:
         return True
@@ -22,45 +23,83 @@ def point_in_circle(x, y, radius):
     if dy > radius:
         return False
 
-    if dx*dx + dy*dy > radius * radius:
+    if dx * dx + dy * dy > radius * radius:
         return False
     else:
         return True
 
 
-class Bird:
+# Given a point in a circle, return a vector to the closest point on the circle
+# to the given point.
+def get_vector_to_circle(position, radius):
+    center = Vector(radius, radius)
+    diff = position.subtract(center)
+
+    if diff.get_magnitude() == 0:
+        return None
+
+    return center.add(diff.scale(radius / diff.get_magnitude())).subtract(position)
+
+
+# This class defines a mathematical vector
+class Vector:
     x = 0
     y = 0
-    speed = 0
-    heading = 0
-    color = ()
 
-    def __init__(self, x, y, speed, heading, color):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.speed = speed
-        self.heading = heading
+
+    def get_magnitude(self):
+        return math.sqrt(self.x * self.x + self.y * self.y)
+
+    def add(self, vector):
+        return Vector(self.x + vector.x, self.y + vector.y)
+
+    def subtract(self, vector):
+        return Vector(self.x - vector.x, self.y - vector.y)
+
+    def scale(self, scalar):
+        return Vector(self.x * scalar, self.y * scalar)
+
+    def normalize(self):
+        return Vector(self.x / self.get_magnitude(), self.y / self.get_magnitude())
+
+
+# This class defines a bird, which is a member of a flock
+class Bird:
+    circle_avoid_strength = 2
+    position = Vector(0, 0)
+    velocity = Vector(0, 0)
+    color = ()
+    speed_limit = 5
+
+    def __init__(self, position, velocity, color):
+        self.position = position
+        self.velocity = velocity
         self.color = color
 
-    def update_heading(self):
+    def update_velocity(self):
+        circle_vector = get_vector_to_circle(self.position, RADIUS)
+        if circle_vector is not None:
+            r = circle_vector.get_magnitude()
+            circle_avoid = circle_vector.scale(-1 * self.circle_avoid_strength / (r * r))
 
-        if random.randint(0, 3) == 3:
-            delta = random.randint(-10, 10) / 30
-            self.heading += delta
+            if point_in_circle(self.position, RADIUS):
+                self.velocity = self.velocity.add(circle_avoid)
+            else:
+                self.velocity = self.velocity.subtract(circle_avoid)
 
-        proj_x = self.x + 30 * math.sin(self.heading)
-        proj_y = self.y - 30 * math.cos(self.heading)
+        self.velocity = self.velocity.add(Vector(random.random() / 10 - 0.05, random.random() / 10 - 0.05))
 
-        while not point_in_circle(proj_x, proj_y, RADIUS):
-            self.heading -= 0.15
-            proj_x = self.x + 30 * math.sin(self.heading)
-            proj_y = self.y - 30 * math.cos(self.heading)
+        # Enforce speed limit
+        speed = self.velocity.get_magnitude()
+        if speed > self.speed_limit:
+            self.velocity = self.velocity.scale(self.speed_limit / speed)
 
     def move(self):
-        self.update_heading()
-
-        self.x += self.speed * math.sin(self.heading)
-        self.y -= self.speed * math.cos(self.heading)
+        self.update_velocity()
+        self.position = self.position.add(self.velocity)
 
 
 def main():
@@ -76,12 +115,10 @@ def main():
     pygame.display.set_caption('Flock')
 
     # Sim variables
-    tweety = Bird(RADIUS, RADIUS, 3, 0, RED)
-
-    flock = [tweety]
+    flock = []
     for i in range(200):
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        flock.append(Bird(RADIUS, RADIUS, 1 + (2 * random.random()), 2 * random.random() * math.pi, color))
+        flock.append(Bird(Vector(RADIUS, RADIUS), Vector(random.random() * 10 - 5, random.random() * 10 - 5), color))
 
     # Main sim loop
     done = False
@@ -100,18 +137,20 @@ def main():
             bird.move()
 
             # Draw bird
-            x = int(bird.x)
-            y = int(bird.y)
-            # hx = int(x + 30*math.sin(bird.heading))
-            # hy = int(y - 30*math.cos(bird.heading))
+            x = int(bird.position.x)
+            y = int(bird.position.y)
             pygame.draw.circle(screen, bird.color, [x, y], 5)
+
+            circle_vector = get_vector_to_circle(bird.position, RADIUS)
+            hx = int(circle_vector.x) + x
+            hy = int(circle_vector.y) + y
             # pygame.draw.line(screen, RED, [x, y], [hx, hy], 2)
 
         # Update screen    
         pygame.display.flip()
 
-        # Limit to 60 fps
-        clock.tick(60)
+        # Limit to 100 fps
+        clock.tick(100)
 
     pygame.quit()
 
