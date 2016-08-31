@@ -1,8 +1,8 @@
 import pygame
 import random
 
-from Bird import Bird
-from Vector import Vector
+from bird import Bird
+from vector import Vector
 
 # Constants
 BLACK = (0, 0, 0)

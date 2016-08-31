@@ -1,6 +1,6 @@
 import random
 
-from Vector import Vector
+from vector import Vector
 
 RADIUS = 500
 
