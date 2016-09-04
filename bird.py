@@ -11,49 +11,89 @@ class Bird:
     velocity = Vector(random.random() - 0.5, random.random() - 0.5)
     color = ()
 
+    # Movement parameters
     speed_limit = 10
     detection_radius = 100
-    circle_avoid_strength = 50
-    separation_strength = 20
-    cohesion_strength = 0.05
+    circle_avoid_strength = 100
+    separation_strength = 10
+    cohesion_strength = 0.1
+    alignment_strength = 0.1
 
     def __init__(self, position, color):
         self.position = position
         self.color = color
 
-    # Update this bird's velocity
-    def update_velocity(self, flock):
+    # The separation rule:
+    # Move away from all birds closer than the detection radius
+    def get_separation_vector(self, flock):
+        bird_avoid = Vector(0, 0);
 
-        # Random movement
-        # self.velocity = self.velocity.add(Vector(random.random() / 10 - 0.05, random.random() / 10 - 0.05))
+        for bird in flock:
+            r = self.get_distance_to(bird)
+            if not 0 < r < self.detection_radius:
+                continue
 
-        # Circle avoidance
+            bird_avoid = bird_avoid.subtract(bird.position.subtract(self.position).scale(1 / (r * r)))
+
+        return bird_avoid.scale(self.separation_strength)
+
+    # The cohesion rule:
+    # Move towards the center of mass of the flock
+    def get_cohesion_vector(self, flock):
+        center_of_mass = Vector(0, 0)
+
+        for bird in flock:
+            if bird is self:
+                continue
+
+            center_of_mass = center_of_mass.add(bird.position)
+
+        center_of_mass = center_of_mass.scale(1.0 / (len(flock) - 1))
+
+        return center_of_mass.subtract(self.position).scale(self.cohesion_strength)
+
+    # The alignment rule:
+    # Move towards the average heading of the flock
+    def get_alignment_vector(self, flock):
+        average_velocity = Vector(0, 0)
+
+        for bird in flock:
+            if bird is self:
+                continue
+
+            average_velocity = average_velocity.add(bird.velocity)
+
+        return average_velocity.scale(self.alignment_strength / (len(flock) - 1))
+
+    # The circle avoidance rule:
+    # Move away from the circle
+    def get_circle_avoid_vector(self):
         circle_vector = get_vector_to_circle(self.position, RADIUS)
         if circle_vector is not None:
             r = circle_vector.get_magnitude()
+            if r > self.detection_radius:
+                return Vector(0, 0)
+
             circle_avoid = circle_vector.scale(-1 * self.circle_avoid_strength / (r * r))
 
-            if point_in_circle(self.position, RADIUS):
-                self.velocity = self.velocity.add(circle_avoid)
-            else:
-                self.velocity = self.velocity.subtract(circle_avoid)
+            if not point_in_circle(self.position, RADIUS):
+                circle_avoid = circle_avoid.scale(-1)
 
-        # Separation
-        for bird in (bird for bird in flock if 0 < self.get_distance_to(bird) < self.detection_radius):
-            vector_to_bird = bird.position.subtract(self.position)
-            r = vector_to_bird.get_magnitude()
-            bird_avoid = vector_to_bird.scale(-1 * self.separation_strength / (r * r))
+            return circle_avoid
 
-            self.velocity = self.velocity.add(bird_avoid)
+        return Vector(0, 0)
 
-        # Cohesion
-        average_position = Vector(0, 0)
+    # Update this bird's velocity
+    def update_velocity(self, flock):
 
-        for bird in flock:
-            average_position = average_position.add(bird.position)
+        # Calculate all influences
+        separation = self.get_separation_vector(flock)
+        cohesion = self.get_cohesion_vector(flock)
+        alignment = self.get_alignment_vector(flock)
+        circle_avoid = self.get_circle_avoid_vector()
 
-        average_position = average_position.scale(1.0 / len(flock))
-        self.velocity = self.velocity.add(average_position.subtract(self.position).scale(self.cohesion_strength))
+        # Apply influences
+        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(circle_avoid)
 
         # Enforce speed limit
         speed = self.velocity.get_magnitude()
