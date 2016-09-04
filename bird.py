@@ -14,8 +14,8 @@ class Bird:
     # Movement parameters
     speed_limit = 10
     detection_radius = 100
-    circle_avoid_strength = 130
-    separation_strength = 5
+    circle_avoid_strength = 50
+    separation_strength = 10
     cohesion_strength = 0.01
     alignment_strength = 0.1
     mouse_avoid_strength = 1000

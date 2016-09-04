@@ -13,13 +13,15 @@ RADIUS = 500
 
 def disperse(flock):
     for bird in flock:
-        bird.cohesion_strength = 0
+        if bird.cohesion_strength > 0:
+            bird.cohesion_strength *= -1
         bird.alignment_strength = 0
 
 
 def resume(flock):
     for bird in flock:
-        bird.cohesion_strength = 0.01
+        if bird.cohesion_strength < 0:
+            bird.cohesion_strength *= -1
         bird.alignment_strength = 0.1
 
 
