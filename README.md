@@ -1,6 +1,6 @@
 # Flock
 
-Flock is a Python flocking simulator inspired by (Boids)[https://en.wikipedia.org/wiki/Boids].
+Flock is a Python flocking simulator inspired by [Boids)(https://en.wikipedia.org/wiki/Boids).
 It simulates the behavior of a flock of indepedent agents (birds), each following
 the same set of rules. Complex behavior emerges from the group, despite the lack
 of organization.
