@@ -14,7 +14,7 @@ class Bird:
     # Movement parameters
     speed_limit = 10
     detection_radius = 100
-    circle_avoid_strength = 50
+    circle_avoid_strength = 100
     separation_strength = 10
     cohesion_strength = 0.01
     alignment_strength = 0.1
@@ -71,7 +71,7 @@ class Bird:
             circle_avoid = circle_vector.scale(-1 * self.circle_avoid_strength / (r * r))
 
             if not point_in_circle(self.position, RADIUS):
-                circle_avoid = circle_avoid.scale(-1)
+                circle_avoid = circle_vector.scale(r * r)
 
             return circle_avoid
 
