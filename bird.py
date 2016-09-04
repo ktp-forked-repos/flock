@@ -14,10 +14,11 @@ class Bird:
     # Movement parameters
     speed_limit = 10
     detection_radius = 100
-    circle_avoid_strength = 100
-    separation_strength = 10
-    cohesion_strength = 0.1
+    circle_avoid_strength = 130
+    separation_strength = 5
+    cohesion_strength = 0.01
     alignment_strength = 0.1
+    mouse_avoid_strength = 1000
 
     def __init__(self, position, color):
         self.position = position
@@ -30,9 +31,8 @@ class Bird:
 
         for bird in flock:
             r = self.get_distance_to(bird)
-            if not 0 < r < self.detection_radius:
+            if r == 0:
                 continue
-
             bird_avoid = bird_avoid.subtract(bird.position.subtract(self.position).scale(1 / (r * r)))
 
         return bird_avoid.scale(self.separation_strength)
@@ -43,12 +43,9 @@ class Bird:
         center_of_mass = Vector(0, 0)
 
         for bird in flock:
-            if bird is self:
-                continue
-
             center_of_mass = center_of_mass.add(bird.position)
 
-        center_of_mass = center_of_mass.scale(1.0 / (len(flock) - 1))
+        center_of_mass = center_of_mass.scale(1.0 / len(flock))
 
         return center_of_mass.subtract(self.position).scale(self.cohesion_strength)
 
@@ -58,12 +55,9 @@ class Bird:
         average_velocity = Vector(0, 0)
 
         for bird in flock:
-            if bird is self:
-                continue
-
             average_velocity = average_velocity.add(bird.velocity)
 
-        return average_velocity.scale(self.alignment_strength / (len(flock) - 1))
+        return average_velocity.scale(self.alignment_strength / len(flock))
 
     # The circle avoidance rule:
     # Move away from the circle
@@ -83,17 +77,37 @@ class Bird:
 
         return Vector(0, 0)
 
+    # The mouse avoidance rule:
+    # Move away from the mouse
+    def get_mouse_avoid(self, mouse):
+        if not point_in_circle(mouse, RADIUS):
+            return Vector(0, 0)
+
+        vector_to_mouse = mouse.subtract(self.position)
+        r = vector_to_mouse.get_magnitude()
+
+        return vector_to_mouse.scale(-1 * self.mouse_avoid_strength / (r * r))
+
     # Update this bird's velocity
-    def update_velocity(self, flock):
+    def update_velocity(self, flock, mouse):
+
+        apparent_flock = [bird for bird in flock if
+                          self.get_distance_to(bird) < self.detection_radius and bird is not self]
 
         # Calculate all influences
-        separation = self.get_separation_vector(flock)
-        cohesion = self.get_cohesion_vector(flock)
-        alignment = self.get_alignment_vector(flock)
+        separation = Vector(0, 0)
+        cohesion = Vector(0, 0)
+        alignment = Vector(0, 0)
+        if len(apparent_flock) != 0:
+            separation = self.get_separation_vector(apparent_flock)
+            cohesion = self.get_cohesion_vector(apparent_flock)
+            alignment = self.get_alignment_vector(apparent_flock)
+
         circle_avoid = self.get_circle_avoid_vector()
+        mouse_avoid = self.get_mouse_avoid(mouse)
 
         # Apply influences
-        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(circle_avoid)
+        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(circle_avoid).add(mouse_avoid)
 
         # Enforce speed limit
         speed = self.velocity.get_magnitude()
@@ -101,8 +115,8 @@ class Bird:
             self.velocity = self.velocity.scale(self.speed_limit / speed)
 
     # Update this bird's position
-    def move(self, flock):
-        self.update_velocity(flock)
+    def move(self, flock, mouse):
+        self.update_velocity(flock, mouse)
         self.position = self.position.add(self.velocity)
 
     # FInd the distance from this bird to another one
