@@ -8,7 +8,6 @@ of organization.
 ## Usage
 
 Run flock.py to launch the sim. Press space to disperse the flock. 
-Note that the birds are afraid of the mouse.
 
 ## Contributing
 
