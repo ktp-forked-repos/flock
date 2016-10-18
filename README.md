@@ -1,3 +1,5 @@
+![](flock_image.png)
+
 # Flock
 
 Flock is a Python flocking simulator inspired by [Boids](https://en.wikipedia.org/wiki/Boids).
