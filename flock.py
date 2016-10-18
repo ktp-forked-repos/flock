@@ -1,3 +1,6 @@
+# Author: Kiran Tomlinson
+# Version: 1.1
+
 import pygame
 import random
 
