@@ -70,6 +70,7 @@ def main():
             x = int(bird.position.x)
             y = int(bird.position.y)
             pygame.draw.circle(screen, bird.color, [x, y], 8)
+            pygame.draw.line(screen, bird.color, [x, y], [x + bird.velocity.x * 3, y + bird.velocity.y * 3], 3)
 
         # Update screen    
         pygame.display.flip()
