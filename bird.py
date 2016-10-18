@@ -2,27 +2,28 @@ import random
 
 from vector import Vector
 
-RADIUS = 500
+HEIGHT = 1000
+WIDTH = 1000
 
 
 # This class defines a bird, which is a member of a flock
 class Bird:
     position = Vector(0, 0)
-    velocity = Vector(random.random() - 0.5, random.random() - 0.5)
+    velocity = Vector(0, 0)
     color = ()
 
     # Movement parameters
-    speed_limit = 10
-    detection_radius = 100
-    circle_avoid_strength = 100
+    speed_limit = 8
+    detection_radius = 50
     separation_strength = 10
-    cohesion_strength = 0.01
-    alignment_strength = 0.1
+    cohesion_strength = 0.1
+    alignment_strength = 0.05
     mouse_avoid_strength = 1000
 
     def __init__(self, position, color):
         self.position = position
         self.color = color
+        self.velocity = Vector(random.random() * 10 - 5, random.random() * 10 - 5)
 
     # The separation rule:
     # Move away from all birds closer than the detection radius
@@ -59,29 +60,9 @@ class Bird:
 
         return average_velocity.scale(self.alignment_strength / len(flock))
 
-    # The circle avoidance rule:
-    # Move away from the circle
-    def get_circle_avoid_vector(self):
-        circle_vector = get_vector_to_circle(self.position, RADIUS)
-        if circle_vector is not None:
-            r = circle_vector.get_magnitude()
-            if r > self.detection_radius:
-                return Vector(0, 0)
-
-            circle_avoid = circle_vector.scale(-1 * self.circle_avoid_strength / (r * r))
-
-            if not point_in_circle(self.position, RADIUS):
-                circle_avoid = circle_vector.scale(r * r)
-
-            return circle_avoid
-
-        return Vector(0, 0)
-
     # The mouse avoidance rule:
     # Move away from the mouse
     def get_mouse_avoid(self, mouse):
-        if not point_in_circle(mouse, RADIUS):
-            return Vector(0, 0)
 
         vector_to_mouse = mouse.subtract(self.position)
         r = vector_to_mouse.get_magnitude()
@@ -103,11 +84,18 @@ class Bird:
             cohesion = self.get_cohesion_vector(apparent_flock)
             alignment = self.get_alignment_vector(apparent_flock)
 
-        circle_avoid = self.get_circle_avoid_vector()
-        mouse_avoid = self.get_mouse_avoid(mouse)
+        if mouse:
+            mouse_avoid = self.get_mouse_avoid(mouse)
+        else:
+            mouse_avoid = Vector(0, 0)
+
+        # separation = Vector(0, 0)
+        # cohesion = Vector(0, 0)
+        # alignment = Vector(0, 0)
+        # mouse_avoid = Vector(0, 0)
 
         # Apply influences
-        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(circle_avoid).add(mouse_avoid)
+        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(mouse_avoid)
 
         # Enforce speed limit
         speed = self.velocity.get_magnitude()
@@ -119,38 +107,9 @@ class Bird:
         self.update_velocity(flock, mouse)
         self.position = self.position.add(self.velocity)
 
+        self.position.x = self.position.x % WIDTH
+        self.position.y = self.position.y % HEIGHT
+
     # FInd the distance from this bird to another one
     def get_distance_to(self, bird):
         return self.position.subtract(bird.position).get_magnitude()
-
-
-# Returns true if the Vector point is in circle of radius, else false
-def point_in_circle(point, radius):
-    dx = abs(point.x - radius)
-    dy = abs(point.y - radius)
-
-    if dx + dy < radius:
-        return True
-
-    if dx > radius:
-        return False
-
-    if dy > radius:
-        return False
-
-    if dx * dx + dy * dy > radius * radius:
-        return False
-    else:
-        return True
-
-
-# Given a point in a circle, return a vector to the closest point on the circle
-# to the given point.
-def get_vector_to_circle(position, radius):
-    center = Vector(radius, radius)
-    diff = position.subtract(center)
-
-    if diff.get_magnitude() == 0:
-        return None
-
-    return center.add(diff.scale(radius / diff.get_magnitude())).subtract(position)

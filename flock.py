@@ -8,7 +8,8 @@ from vector import Vector
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
-RADIUS = 500
+WIDTH = 1000
+HEIGHT = 1000
 
 
 def disperse(flock):
@@ -31,7 +32,7 @@ def main():
     clock = pygame.time.Clock()
 
     # Window size
-    size = (RADIUS * 2, RADIUS * 2)
+    size = (WIDTH, HEIGHT)
     screen = pygame.display.set_mode(size)
 
     # Window title
@@ -41,10 +42,11 @@ def main():
     flock = []
     for i in range(100):
         color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-        flock.append(Bird(Vector(RADIUS, RADIUS), color))
+        flock.append(Bird(Vector(random.randint(0, WIDTH), random.randint(0, WIDTH)), color))
 
     # Main sim loop
     done = False
+    mouse_pressed = False
     while not done:
         mouse = Vector(-1, -1)
 
@@ -57,10 +59,13 @@ def main():
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     resume(flock)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pressed = True
+            elif event.type == pygame.MOUSEBUTTONUP:
+                mouse_pressed = False
 
         # Clear screen
         screen.fill(BLACK)
-        pygame.draw.ellipse(screen, WHITE, [0, 0, RADIUS * 2, RADIUS * 2])
 
         # Get mouse position
         mouse.x, mouse.y = pygame.mouse.get_pos()
@@ -68,7 +73,7 @@ def main():
         # Move and draw birds
         for bird in flock:
             # Move bird
-            bird.move(flock, mouse)
+            bird.move(flock, mouse if mouse_pressed else False)
 
             # Draw bird
             x = int(bird.position.x)
