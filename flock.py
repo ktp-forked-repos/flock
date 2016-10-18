@@ -14,16 +14,12 @@ HEIGHT = 1000
 
 def disperse(flock):
     for bird in flock:
-        if bird.cohesion_strength > 0:
-            bird.cohesion_strength *= -1
-        bird.alignment_strength = 0
+        bird.disperse = True
 
 
 def resume(flock):
     for bird in flock:
-        if bird.cohesion_strength < 0:
-            bird.cohesion_strength *= -1
-        bird.alignment_strength = 0.1
+        bird.disperse = False
 
 
 def main():
@@ -46,7 +42,6 @@ def main():
 
     # Main sim loop
     done = False
-    mouse_pressed = False
     while not done:
         mouse = Vector(-1, -1)
 
@@ -59,10 +54,6 @@ def main():
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE:
                     resume(flock)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pressed = True
-            elif event.type == pygame.MOUSEBUTTONUP:
-                mouse_pressed = False
 
         # Clear screen
         screen.fill(BLACK)
@@ -73,12 +64,12 @@ def main():
         # Move and draw birds
         for bird in flock:
             # Move bird
-            bird.move(flock, mouse if mouse_pressed else False)
+            bird.move(flock)
 
             # Draw bird
             x = int(bird.position.x)
             y = int(bird.position.y)
-            pygame.draw.circle(screen, bird.color, [x, y], 5)
+            pygame.draw.circle(screen, bird.color, [x, y], 8)
 
         # Update screen    
         pygame.display.flip()

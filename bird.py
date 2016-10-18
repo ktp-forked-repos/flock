@@ -11,14 +11,14 @@ class Bird:
     position = Vector(0, 0)
     velocity = Vector(0, 0)
     color = ()
+    disperse = False
 
     # Movement parameters
     speed_limit = 8
     detection_radius = 50
-    separation_strength = 10
+    separation_strength = 30
     cohesion_strength = 0.1
-    alignment_strength = 0.05
-    mouse_avoid_strength = 1000
+    alignment_strength = 0.5
 
     def __init__(self, position, color):
         self.position = position
@@ -60,17 +60,8 @@ class Bird:
 
         return average_velocity.scale(self.alignment_strength / len(flock))
 
-    # The mouse avoidance rule:
-    # Move away from the mouse
-    def get_mouse_avoid(self, mouse):
-
-        vector_to_mouse = mouse.subtract(self.position)
-        r = vector_to_mouse.get_magnitude()
-
-        return vector_to_mouse.scale(-1 * self.mouse_avoid_strength / (r * r))
-
     # Update this bird's velocity
-    def update_velocity(self, flock, mouse):
+    def update_velocity(self, flock):
 
         apparent_flock = [bird for bird in flock if
                           self.get_distance_to(bird) < self.detection_radius and bird is not self]
@@ -84,18 +75,12 @@ class Bird:
             cohesion = self.get_cohesion_vector(apparent_flock)
             alignment = self.get_alignment_vector(apparent_flock)
 
-        if mouse:
-            mouse_avoid = self.get_mouse_avoid(mouse)
-        else:
-            mouse_avoid = Vector(0, 0)
-
-        # separation = Vector(0, 0)
-        # cohesion = Vector(0, 0)
-        # alignment = Vector(0, 0)
-        # mouse_avoid = Vector(0, 0)
+        if self.disperse:
+            cohesion = cohesion.scale(-1)
+            alignment = Vector(0, 0)
 
         # Apply influences
-        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment).add(mouse_avoid)
+        self.velocity = self.velocity.add(separation).add(cohesion).add(alignment)
 
         # Enforce speed limit
         speed = self.velocity.get_magnitude()
@@ -103,8 +88,8 @@ class Bird:
             self.velocity = self.velocity.scale(self.speed_limit / speed)
 
     # Update this bird's position
-    def move(self, flock, mouse):
-        self.update_velocity(flock, mouse)
+    def move(self, flock):
+        self.update_velocity(flock)
         self.position = self.position.add(self.velocity)
 
         self.position.x = self.position.x % WIDTH
